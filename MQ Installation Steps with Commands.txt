@@ -1,0 +1,108 @@
+
+
+
+1). OS Prerequisites:
+        i. create the mqm userid:
+               #useradd mqm
+               #id mqm
+
+        ii. set the 'nofile' values in '/etc/security/limits.conf' file.
+               #vi /etc/security/limits.conf
+
+                  Add the below lines in the file, save and exit.
+                      mqm hard nofile 10240
+                      mqm soft nofile 10240
+
+        iii. set the 'noproc' values in '/etc/security/limits.d/20-proc*.conf' file.
+               #vi 20-nproc.conf
+                  Add below lines
+                        mqm	hard	nproc	4096
+                        mqm	soft	nproc	4096
+
+
+2). Mount the NFS shared storage on the server and add them in '/etc/fstab' as permanen mount point, 
+    Where MQv9.3.0.2 going to install and also ensure that NFSv4 installed on NFS Server.
+
+    I have used example server IP as '192.168.20.178'.You can use appropriate IP of yours.
+
+        i. To check the NFS server version:
+               #showmount -a
+                    All mount points on 192.168.20.178:
+                   /export/share (sync,sec=sys,rw,secure,no_root_squash,no_all_squash) - NFSv3
+                  /export/home  (sync,rw,secure,no_root_squash,no_all_squash) - NFSv4
+
+                  or
+
+               #cat /proc/mounts | grep nfs
+                  192.168.20.178:/export/share /mnt/nfs nfs nfsvers=3,rw,hard,rsize=8192,wsize=8192,timeo=14,intr 0 0
+
+                  or
+
+               #nfsstat -m
+                  rw,vers=4,rsize=1048576,wsize=1048576,namlen=255,hard,nointr,proto=tcp,timeo=600,retrans=2,sec=sys,clinntaddr=192.168.1.4,addr=192.168.1.5
+
+
+        ii.    #vi /etc/fstab
+                  Add entry as 
+                   /dev/mapper/rootvg-lvm1  
+                   192.168.20.178:/shared_storage  /mnt                       nfs     defaults        0 0
+
+
+3). Make sure, we have enough disk space for all the '/', '/home', '/opt', '/tmp'.
+        Use the below command to verify the space for the partitions.
+               #df -Th
+                    
+4). Copy the MQ Installables on the server and untar it.
+               #tar -xvzf MQ_V9.0_F_LNX_ON_X86_64_EIMAGE.tar.gz -C /tmp
+
+5). Install MQ on RHEL
+    To install all components to the default location(/opt/mqm), use the following command:
+               #rpm -ivh MQSeries*.rpm
+        Accept the license to the MQ
+               #./mqlicense.sh
+    set it as the primary installation. Enter the following command at the command prompt:
+               #/bin/setmqinst -i -p /opt/mqm
+                (or)
+               #./setmqinst -i -p /opt/mqm
+    To check the installed MQ version 
+               #dspmqver
+    Post Installation, run this command to check everything is in passed status.
+               #su mqm -c "/opt/mqm/bin/mqconfig"
+    Run the rpm command to find out which packages are installed on your server.
+               #rpm -qa | grep -i mq
+    Check at these places for any errors:
+              MQ Logs at '/var/mqm/errors' :
+               #cd /var/mqm
+               #ls -lrt
+               #cd errors
+               #ls -lrt
+               #tail -100f AMQ58964.0.FDC964
+               #tail -100f AMQERR01.LOG
+
+6). Before creating QueueManagers on Shared storage, We can evaluate the NFS drive for the QueueManager creation using below commands.
+              Basic testing:
+	             #amqmfsck /mnt/shared_storage/   or  #amqmfsck -v /mnt/shared_storage/ 
+
+7). Create QMGR on Shared storage. 
+               #crtmqm -md /mnt/shared_storage/QMGR100/data -ld /mnt/shared_storage/QMGR100/logs -lf 8192 -lp 200 -ls 200 QMGR100
+
+              Start the QueueManager
+               #strmqm QMGR100
+
+              Lets get into QueueManager and create a Local Queue 'QMGR1'.
+               #runmqsc QMGR100
+                 >display qmgr
+                 >display qmstatus all
+                 >DEFINE QLOCAL(QMGR1)
+                 >DISPLAY QLOCAL(QMGR1)
+                 
+              There are 2 sample program to put and get messages outside of the MQSC:
+		             *amqsput - to put the messages in the queue
+		             *amqsget - to get the messages from the queue
+		           #amqsput QUEUE1 QMGR200 
+                    Sample AMQSPUT start
+                    target queue is QMGR1
+                         MSG1
+                         MSG2
+                         MSG3 
+                         MSG4
