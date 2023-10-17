@@ -1,6 +1,4 @@
 
-
-
 1). OS Prerequisites:
         i. create the mqm userid:
                #useradd mqm
