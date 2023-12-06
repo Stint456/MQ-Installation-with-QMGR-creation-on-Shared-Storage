@@ -79,7 +79,7 @@
 
 6). Before creating QueueManagers on Shared storage, We can evaluate the NFS drive for the QueueManager creation using below commands.
               Basic testing:
-	             #amqmfsck /mnt/shared_storage/   or  #amqmfsck -v /mnt/shared_storage/ 
+	       #amqmfsck /mnt/shared_storage/   or  #amqmfsck -v /mnt/shared_storage/ 
 
 7). Create QMGR on Shared storage. 
                #crtmqm -md /mnt/shared_storage/QMGR100/data -ld /mnt/shared_storage/QMGR100/logs -lf 8192 -lp 200 -ls 200 QMGR100
@@ -97,7 +97,7 @@
               There are 2 sample program to put and get messages outside of the MQSC:
 		             *amqsput - to put the messages in the queue
 		             *amqsget - to get the messages from the queue
-		           #amqsput QUEUE1 QMGR200 
+	       #amqsput QUEUE1 QMGR200 
                     Sample AMQSPUT start
                     target queue is QMGR1
                          MSG1
